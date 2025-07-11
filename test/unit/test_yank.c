@@ -16,8 +16,11 @@ static RzCore *fake_core_new(void) {
 bool test_yank(void) {
 	RzCore *core = fake_core_new();
 	bool r = rz_core_write_value_at(core, 0, 0x11223344, 4);
+	ut8 *buf = malloc(4);
 	mu_assert_true(r, "value should be written at 0");
-	mu_assert_memeq(core->block, (const ut8 *)"\x44\x33\x22\x11", 4, "original bytes should be right at address 0");
+	r = rz_io_nread_at(core->io, 0, buf, 4) != -1;
+	mu_assert_true(r, "read should succeed");
+	mu_assert_memeq(buf, (const ut8 *)"\x44\x33\x22\x11", 4, "original bytes should be right at address 0");
 	r = rz_core_yank(core, 0, 4);
 	mu_assert_true(r, "4 bytes should be yanked from 0");
 	r = rz_core_seek(core, 4, true);
@@ -26,8 +29,11 @@ bool test_yank(void) {
 	mu_assert_true(r, "clipboard content should be pasted at address 4");
 	r = rz_core_block_read(core) > 0;
 	mu_assert_true(r, "more than 0 bytes should be read at address 4");
-	mu_assert_memeq(core->block, (const ut8 *)"\x44\x33\x22\x11", 4, "yanked bytes should be pasted at address 4");
+	r = rz_io_nread_at(core->io, 0, buf, 4) != -1;
+	mu_assert_true(r, "read should succeed");
+	mu_assert_memeq(buf, (const ut8 *)"\x44\x33\x22\x11", 4, "yanked bytes should be pasted at address 4");
 	rz_core_free(core);
+	free(buf);
 	mu_end;
 }
 
